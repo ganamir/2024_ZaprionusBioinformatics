@@ -129,7 +129,59 @@ done
 
 ```
 
+### samtobam.sh >>> converts .sam files to .bam files:
 
+```
+#!/bin/bash
+
+module load samtools
+
+# Define paths
+SAM_DIR="/scratch/user/amir.gabidulin/20240418_231031/Practice2/AlignedReads"
+BAM_DIR="/scratch/user/amir.gabidulin/20240418_231031/Practice2/bamFiles"
+
+# Create BAM directory if it doesn't exist
+mkdir -p "$BAM_DIR"
+
+# Convert SAM files to BAM
+for sam_file in "$SAM_DIR"/*.sam; do
+    if [ -f "$sam_file" ]; then
+        base_name=$(basename "$sam_file" .sam)
+        bam_file="$BAM_DIR/$base_name.bam"
+        samtools view -bS "$sam_file" > "$bam_file"
+        echo "Converted $sam_file to $bam_file"
+    else
+        echo "Warning: $sam_file does not exist or is not a file."
+    fi
+done
+```
+
+### sortBam.sh >>> sorts BAMs for SNP calling:
+
+```
+#!/bin/bash
+
+module load samtools
+
+# Define paths
+BAM_DIR="/scratch/user/amir.gabidulin/20240418_231031/Practice2/bamFiles"
+SORTED_BAM_DIR="/scratch/user/amir.gabidulin/20240418_231031/Practice2/bamFiles/SortedFiles"
+
+# Create sorted BAM directory if it doesn't exist
+mkdir -p "$SORTED_BAM_DIR"
+
+# Sort BAM files and add "_filtered" to their base names
+for bam_file in "$BAM_DIR"/*.bam; do
+    if [ -f "$bam_file" ]; then
+        base_name=$(basename "$bam_file" .bam)
+        sorted_bam_file="$SORTED_BAM_DIR/${base_name}_filtered.bam"
+        samtools sort -o "$sorted_bam_file" "$bam_file"
+        echo "Sorted $bam_file and saved as $sorted_bam_file"
+    else
+        echo "Warning: $bam_file does not exist or is not a file."
+    fi
+done
+```
 
 
 
