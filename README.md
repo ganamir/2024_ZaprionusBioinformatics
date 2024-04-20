@@ -119,17 +119,6 @@ for R1_file in "$INPUT_DIR"/*.trimmed_R1.fastq.gz; do
     fi
 done
 
-# Align additional paired-end files with different naming convention
-# Use find command to locate files matching the pattern
-find "$INPUT_DIR" -type f -name 'T*_FOUND_R1.trimmed.fastq.gz' | while IFS= read -r T_file; do
-    if [ -f "$T_file" ]; then
-        SAMPLE_NAME=$(basename "$T_file" "_FOUND_R1.trimmed.fastq.gz")
-        TRIMMED_REV="$INPUT_DIR/${SAMPLE_NAME}_FOUND_R2.trimmed.fastq.gz"
-        run_bowtie2 "$SAMPLE_NAME" "$T_file" "$TRIMMED_REV"
-    else
-        echo "Warning: $T_file does not exist or is not a file."
-    fi
-done
 ```
 
 
