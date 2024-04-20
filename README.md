@@ -81,9 +81,9 @@ done
 ``` #!/bin/bash
 
 # Define paths
-BOWTIE2_INDEX="path/to/your/bowtie2/index"
-INPUT_DIR="path/to/input_directory"
-OUTPUT_DIR="path/to/output_directory"
+BOWTIE2_INDEX="/scratch/user/amir.gabidulin/20240418_231031/Practice2/DGRPassembly/reference_genome"
+OUTPUT_DIR="/scratch/user/amir.gabidulin/20240418_231031/Practice2/AlignedReads"
+INPUT_DIR="/scratch/user/amir.gabidulin/20240418_231031/Practice2/TrimmedData"
 LOG_FILE="$OUTPUT_DIR/bowtie2_log.txt"
 
 # Create output directory if it doesn't exist
