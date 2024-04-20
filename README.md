@@ -4,6 +4,8 @@ https://hgdownload.soe.ucsc.edu/goldenPath/dm6/bigZips/
 
 https://hcc.unl.edu/docs/applications/app_specific/bioinformatics_tools/alignment_tools/bowtie2/
 
+https://www.ebi.ac.uk/sites/ebi.ac.uk/files/content.ebi.ac.uk/materials/2014/140217_AgriOmics/dan_bolser_snp_calling.pdf
+
 ## Methods:
 ### Find .fastq.gz files and copy them to my directory
 
