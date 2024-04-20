@@ -33,6 +33,8 @@ QUAL=20
 INPUT_DIR="/scratch/user/amir.gabidulin/20240418_231031/Practice2/SubsetData"
 OUTPUT_DIR="/scratch/user/amir.gabidulin/20240418_231031/Practice2/TrimmedData"
 
+mkdir -p "$OUTPUT_DIR"
+
 # Process regular paired-end files
 for R1_file in "$INPUT_DIR"/*_R1_001.fastq.subset.fastq.gz; do
     # Extract corresponding R2 filename
