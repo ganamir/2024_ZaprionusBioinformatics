@@ -75,3 +75,64 @@ done
 
 ``` bowtie2-build dm6.fa.gz reference_genome ```
 
+
+### bowtie2AlignScript.sh >>> Align reads to your reference index
+
+``` #!/bin/bash
+
+# Define paths
+BOWTIE2_INDEX="path/to/your/bowtie2/index"
+INPUT_DIR="path/to/input_directory"
+OUTPUT_DIR="path/to/output_directory"
+LOG_FILE="$OUTPUT_DIR/bowtie2_log.txt"
+
+# Create output directory if it doesn't exist
+mkdir -p "$OUTPUT_DIR"
+
+# Function to run Bowtie2 alignment
+run_bowtie2() {
+    local SAMPLE_NAME="$1"
+    local TRIMMED_FWD="$2"
+    local TRIMMED_REV="$3"
+    local OUTPUT_SAM="$OUTPUT_DIR/${SAMPLE_NAME}.sam"
+
+    echo "Aligning $TRIMMED_FWD and $TRIMMED_REV..."
+
+    # Run Bowtie2 alignment
+    bowtie2 -x "$BOWTIE2_INDEX" \
+            -1 "$TRIMMED_FWD" \
+            -2 "$TRIMMED_REV" \
+            -S "$OUTPUT_SAM" \
+            2>> "$LOG_FILE"
+
+    # Optionally, add additional processing or logging here
+}
+
+# Align regular paired-end files
+for R1_file in "$INPUT_DIR"/*.trimmed_R1.fastq.gz; do
+    if [ -f "$R1_file" ]; then
+        SAMPLE_NAME=$(basename "$R1_file" ".trimmed_R1.fastq.gz")
+        TRIMMED_REV="$INPUT_DIR/${SAMPLE_NAME}.trimmed_R2.fastq.gz"
+        run_bowtie2 "$SAMPLE_NAME" "$R1_file" "$TRIMMED_REV"
+    else
+        echo "Warning: $R1_file does not exist or is not a file."
+    fi
+done
+
+# Align additional paired-end files with different naming convention
+# Use find command to locate files matching the pattern
+find "$INPUT_DIR" -type f -name 'T*_FOUND_R1.trimmed.fastq.gz' | while IFS= read -r T_file; do
+    if [ -f "$T_file" ]; then
+        SAMPLE_NAME=$(basename "$T_file" "_FOUND_R1.trimmed.fastq.gz")
+        TRIMMED_REV="$INPUT_DIR/${SAMPLE_NAME}_FOUND_R2.trimmed.fastq.gz"
+        run_bowtie2 "$SAMPLE_NAME" "$T_file" "$TRIMMED_REV"
+    else
+        echo "Warning: $T_file does not exist or is not a file."
+    fi
+done
+```
+
+
+
+
+
