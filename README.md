@@ -185,5 +185,24 @@ for bam_file in "$BAM_DIR"/*.bam; do
 done
 ```
 
+### pipelineScript.sh >>> Master script:
+
+```
+#!/bin/bash
+
+# Define paths
+TRIM_SCRIPT="/scratch/user/amir.gabidulin/20240418_231031/Practice2/cutadaptTrimmer.sh"
+ALIGN_SCRIPT="/scratch/user/amir.gabidulin/20240418_231031/Practice2/bowtie2AlignScript.sh"
+CONVERT_SCRIPT="/scratch/user/amir.gabidulin/20240418_231031/Practice2/samtobam.sh"
+SORT_SCRIPT="/scratch/user/amir.gabidulin/20240418_231031/Practice2/sortBam.sh"
+
+# Execute each script sequentially
+bash "$TRIM_SCRIPT"
+bash "$ALIGN_SCRIPT"
+bash "$CONVERT_SCRIPT"
+bash "$SORT_SCRIPT"
+
+echo "All scripts executed successfully."
+```
 
 
