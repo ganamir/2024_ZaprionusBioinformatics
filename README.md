@@ -2,6 +2,8 @@
 ## Important sites:
 https://hgdownload.soe.ucsc.edu/goldenPath/dm6/bigZips/
 
+https://hcc.unl.edu/docs/applications/app_specific/bioinformatics_tools/alignment_tools/bowtie2/
+
 ## Methods:
 ### Find .fastq.gz files and copy them to my directory
 
