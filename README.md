@@ -1,4 +1,7 @@
 # 2024_ZaprionusBioinformatics
+## Important sites:
+https://hgdownload.soe.ucsc.edu/goldenPath/dm6/bigZips/
+
 
 ### Find .fastq.gz files and copy them to my directory
 
