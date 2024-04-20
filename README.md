@@ -68,5 +68,5 @@ done
 
 ### Build a Reference Genome from your Genome Assembly (dm6 for DGRP)
 
-``` bowti2 build dm6.fa.gz reference_genome ```
+``` bowtie2-build dm6.fa.gz reference_genome ```
 
