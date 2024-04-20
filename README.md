@@ -65,3 +65,8 @@ for T_file in "$INPUT_DIR"/T*_FOUND_R1.fastq.subset.fastq.gz; do
     # Optionally, add additional processing or logging here
 done
  ```
+
+### Build a Reference Genome from your Genome Assembly (dm6 for DGRP)
+
+``` bowti2 build dm6.fa.gz reference_genome ```
+
