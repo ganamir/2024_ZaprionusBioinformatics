@@ -17,7 +17,10 @@ https://www.ebi.ac.uk/sites/ebi.ac.uk/files/content.ebi.ac.uk/materials/2014/140
 
 ### cutadaptTrimmer.sh >>> Search for my .fastq.gz files, both treatment and founders, and insert them appropriately into the cutadapt function with 20 filtering quality and my adapter sequences:
 
-``` #!/bin/bash
+```
+#!/bin/bash
+
+module load cutadapt
 
 # Define adapter sequences
 ADAPTER_FWD="AGATCGGAAGAGC"
@@ -80,7 +83,10 @@ done
 
 ### bowtie2AlignScript.sh >>> Align reads to your reference index
 
-``` #!/bin/bash
+```
+#!/bin/bash
+
+module load bowtie2
 
 # Define paths
 BOWTIE2_INDEX="/scratch/user/amir.gabidulin/20240418_231031/Practice2/DGRPassembly/reference_genome"
