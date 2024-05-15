@@ -18,7 +18,18 @@ https://www.ebi.ac.uk/sites/ebi.ac.uk/files/content.ebi.ac.uk/materials/2014/140
 ### cutadaptTrimmer.sh >>> Search for my .fastq.gz files, both treatment and founders, and insert them appropriately into the cutadapt function with 20 filtering quality and my adapter sequences:
 
 ```
+
 #!/bin/bash
+#SBATCH --partition=cas
+#SBATCH --time=7-00:0:00
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=1
+#SBATCH --cpus-per-task=50
+#SBATCH --mail-type=ALL
+#SBATCH --mail-user=amir.gabidulin@wsu.edu
+#SBATCH --output=output.out
+#SBATCH --error=error.err
+
 
 module load cutadapt
 
@@ -30,18 +41,18 @@ ADAPTER_REV="AGATCGGAAGAGC"
 QUAL=20
 
 # Define input and output directories
-INPUT_DIR="/scratch/user/amir.gabidulin/20240418_231031/Practice2/SubsetData"
-OUTPUT_DIR="/scratch/user/amir.gabidulin/20240418_231031/Practice2/TrimmedData"
+INPUT_DIR="/weka/scratch/user/amir.gabidulin/20240510_132726/FASTQ_Files"
+OUTPUT_DIR="/weka/scratch/user/amir.gabidulin/20240510_132726/TrimmedData"
 
 mkdir -p "$OUTPUT_DIR"
 
 # Process regular paired-end files
-for R1_file in "$INPUT_DIR"/*_R1_001.fastq.subset.fastq.gz; do
+for R1_file in "$INPUT_DIR"/*_R1_001.fastq.gz; do
     # Extract corresponding R2 filename
     R2_file="${R1_file/_R1_001/_R2_001}"
 
     # Extract basename of the files
-    base_name=$(basename "$R1_file" "_R1_001.fastq.subset.fastq.gz")
+    base_name=$(basename "$R1_file" "_R1_001.fastq.gz")
 
     # Define output filenames with full path
     OUTPUT_FWD="$OUTPUT_DIR/${base_name}.trimmed_R1.fastq.gz"
@@ -57,12 +68,12 @@ for R1_file in "$INPUT_DIR"/*_R1_001.fastq.subset.fastq.gz; do
 done
 
 # Process additional paired-end files with different naming convention
-for T_file in "$INPUT_DIR"/T*_FOUND_R1.fastq.subset.fastq.gz; do
+for T_file in "$INPUT_DIR"/T*_FOUND_R1.fastq.gz; do
     # Extract corresponding R2 filename
     R2_file="${T_file/_R1/_R2}"
 
     # Extract basename of the files
-    base_name=$(basename "$T_file" "_R1.fastq.subset.fastq.gz")
+    base_name=$(basename "$T_file" "_R1.fastq.gz")
 
     # Define output filenames with full path
     OUTPUT_FWD="$OUTPUT_DIR/${base_name}.trimmed_R1.fastq.gz"
