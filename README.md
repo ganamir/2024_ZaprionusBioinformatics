@@ -168,6 +168,11 @@ for sam_file in "$SAM_DIR"/*.sam; do
     fi
 done
 ```
+### Important to check file integrity, what aligned and didn't; Command below allows to check the 10 most common sequences that didn't align
+```
+samtools view -f 4 18057XD-04-06_S0_L001.bam | cut -f 10 | sort | uniq -c | sort -nr | head
+```
+
 
 ### sortBam.sh >>> sorts BAMs for SNP calling:
 
@@ -194,26 +199,6 @@ for bam_file in "$BAM_DIR"/*.bam; do
         echo "Warning: $bam_file does not exist or is not a file."
     fi
 done
-```
-
-### pipelineScript.sh >>> Master script:
-
-```
-#!/bin/bash
-
-# Define paths
-TRIM_SCRIPT="/scratch/user/amir.gabidulin/20240418_231031/Practice2/cutadaptTrimmer.sh"
-ALIGN_SCRIPT="/scratch/user/amir.gabidulin/20240418_231031/Practice2/bowtie2AlignScript.sh"
-CONVERT_SCRIPT="/scratch/user/amir.gabidulin/20240418_231031/Practice2/samtobam.sh"
-SORT_SCRIPT="/scratch/user/amir.gabidulin/20240418_231031/Practice2/sortBam.sh"
-
-# Execute each script sequentially
-bash "$TRIM_SCRIPT"
-bash "$ALIGN_SCRIPT"
-bash "$CONVERT_SCRIPT"
-bash "$SORT_SCRIPT"
-
-echo "All scripts executed successfully."
 ```
 
 
