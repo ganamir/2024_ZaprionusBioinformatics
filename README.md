@@ -200,5 +200,145 @@ for bam_file in "$BAM_DIR"/*.bam; do
     fi
 done
 ```
+### picardFilter.sh >>> sort .bams to remove duplicates
+```
+#!/bin/bash
+#SBATCH --partition=cas
+#SBATCH --time=7-00:0:00
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=1
+#SBATCH --cpus-per-task=64
+#SBATCH --mail-type=ALL
+#SBATCH --mail-user=amir.gabidulin@wsu.edu
+#SBATCH --output=output.out
+#SBATCH --error=error.err
+
+module load picard
+
+# Define the directories
+input_dir="/weka/scratch/user/amir.gabidulin/20240503_022212/FinalDestination/20240510_132726/bamFiles2/SortedFiles"
+output_dir="/weka/scratch/user/amir.gabidulin/20240503_022212/FinalDestination/20240510_132726/bamFiles2/SortedFiles/PicardFiltered"
+
+# Create the output directory if it doesn't exist
+mkdir -p "$output_dir"
+
+# Loop through all .bam files in the input directory
+for bam_file in "$input_dir"/*.bam; do
+    # Extract the base name of the file (without directory and extension)
+    base_name=$(basename "$bam_file" .bam)
+
+    # Define the output file paths
+    output_bam="$output_dir/${base_name}_dedup.bam"
+    metrics_file="$output_dir/${base_name}_metrics.txt"
+
+    # Run Picard MarkDuplicates
+    picard MarkDuplicates \
+        I="$bam_file" \
+        O="$output_bam" \
+        M="$metrics_file" \
+        REMOVE_DUPLICATES=true
+
+    # Index the output BAM file
+    samtools index "$output_bam"
+
+    echo "Processed $bam_file -> $output_bam"
+done
+
+echo "All BAM files processed and indexed."
+```
+
+### Combine .bam samples into a single mpileup
+```
+#!/bin/bash
+#SBATCH --partition=cas
+#SBATCH --time=7-00:0:00
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=1
+#SBATCH --cpus-per-task=64
+#SBATCH --mail-type=ALL
+#SBATCH --mail-user=amir.gabidulin@wsu.edu
+#SBATCH --output=outputC.out
+#SBATCH --error=errorC.err
+
+module load bcftools
+
+bcftools mpileup -Ou -f /weka/scratch/user/amir.gabidulin/20240503_022212/FinalDestination/20240510_132726/DGRPassembly/dm6.fa /weka/scratch/user/amir.gabidulin/20240503_022212/FinalDestination/20240510_132726/bamFiles2/SortedFiles/PicardFiltered/QualityFilteredFiles/18057XD-04-06_S0_L001_filtered_dedup.bam /weka/scratch/user/amir.gabidulin/20240503_022212/FinalDestination/20240510_132726/bamFiles2/SortedFiles/PicardFiltered/QualityFilteredFiles/18057XD-04-07_S0_L001_filtered_dedup.bam /weka/scratch/user/amir.gabidulin/20240503_022212/FinalDestination/20240510_132726/bamFiles2/SortedFiles/PicardFiltered/QualityFilteredFiles/18057XD-04-08_S0_L001_filtered_dedup.bam /weka/scratch/user/amir.gabidulin/20240503_022212/FinalDestination/20240510_132726/bamFiles2/SortedFiles/PicardFiltered/QualityFilteredFiles/18057XD-04-09_S0_L001_filtered_dedup.bam /weka/scratch/user/amir.gabidulin/20240503_022212/FinalDestination/20240510_132726/bamFiles2/SortedFiles/PicardFiltered/QualityFilteredFiles/18057XD-04-10_S0_L001_filtered_dedup.bam /weka/scratch/user/amir.gabidulin/20240503_022212/FinalDestination/20240510_132726/bamFiles2/SortedFiles/PicardFiltered/QualityFilteredFiles/18057XD-04-11_S0_L001_filtered_dedup.bam -o Zaprionus.bcf ### Change Zaprionus Samples for Control
+
+```
+
+### Call .VCF from the .BCF
+```
+#!/bin/bash
+#SBATCH --partition=cas
+#SBATCH --time=7-00:0:00
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=1
+#SBATCH --cpus-per-task=64
+#SBATCH --mail-type=ALL
+#SBATCH --mail-user=amir.gabidulin@wsu.edu
+#SBATCH --output=outputCall.out
+#SBATCH --error=errorCall.err
+
+module load bcftools
+### Change Zaprionus to Control
+
+bcftools call -vmO z -o /weka/scratch/user/amir.gabidulin/20240503_022212/FinalDestination/20240510_132726/bamFiles2/SortedFiles/PicardFiltered/QualityFilteredFiles/Zaprionus.vcf.gz /weka/scratch/user/amir.gabidulin/20240503_022212/FinalDestination/20240510_132726/bamFiles2/SortedFiles/PicardFiltered/QualityFilteredFiles/Zaprionus.bcf 
+```
+
+### Merge .vcf with both Zaprionus and Control:
+```
+bcftools merge -o merged.vcf.gz -Oz treatmentA.vcf.gz treatmentB.vcf.gz
+```
+
+## For popoolation2:
+
+### Create mpileup with all of the samples:
+```
+#!/bin/bash
+#SBATCH --partition=cas
+#SBATCH --time=7-00:0:00
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=1
+#SBATCH --cpus-per-task=40
+#SBATCH --mail-type=ALL
+#SBATCH --mail-user=amir.gabidulin@wsu.edu
+#SBATCH --output=popoolation.out
+#SBATCH --error=popoolation.err
 
 
+module load samtools
+
+# Directory containing the BAM files
+BAM_DIR="/weka/scratch/user/amir.gabidulin/20240503_022212/FinalDestination/20240510_132726/bamFiles2/SortedFiles/PicardFiltered/QualityFilteredFiles"
+# Reference genome file
+REFERENCE="/weka/scratch/user/amir.gabidulin/20240503_022212/FinalDestination/20240510_132726/DGRPassembly/dm6.fa"
+# Output file for the Pileup
+PILEUP_FILE="/weka/scratch/user/amir.gabidulin/20240503_022212/FinalDestination/20240510_132726/bamFiles2/SortedFiles/PicardFiltered/QualityFilteredFiles/merged.mpileup"
+
+# Create a list of all BAM files in the directory
+BAM_FILES=("$BAM_DIR"/*.bam)
+
+# Convert BAM files to Pileup format
+echo "Converting BAM files to Pileup format..."
+samtools mpileup -f "$REFERENCE" "${BAM_FILES[@]}" > "$PILEUP_FILE"
+
+echo "Pileup file created at $PILEUP_FILE"
+```
+
+### Pipe everything into popoolation2:
+```
+#!/bin/sh
+#SBATCH --partition=cas
+#SBATCH --time=7-00:0:00
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=1
+#SBATCH --cpus-per-task=64
+#SBATCH --mail-type=ALL
+#SBATCH --mail-user=amir.gabidulin@wsu.edu
+#SBATCH --output=popoolationJar.out
+#SBATCH --error=popoolationJar.err
+
+module load java
+
+java -ea -Xmx12g -jar /weka/scratch/user/amir.gabidulin/20240503_022212/FinalDestination/20240510_132726/bamFiles2/SortedFiles/PicardFiltered/QualityFilteredFiles/popoolation2_1201/mpileup2sync.jar --input /weka/scratch/user/amir.gabidulin/20240503_022212/FinalDestination/20240510_132726/bamFiles2/SortedFiles/PicardFiltered/QualityFilteredFiles/merged.mpileup --output /weka/scratch/user/amir.gabidulin/20240503_022212/FinalDestination/20240510_132726/bamFiles2/SortedFiles/PicardFiltered/QualityFilteredFiles/merged.sync --fastq-type sanger --min-qual 20 --threads 64
+```
