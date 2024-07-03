@@ -1,4 +1,7 @@
-# 2024_ZaprionusBioinformatics
+# 2024_ZaprionusBioinformatics: 
+**Email at amir.gabidulin@wsu.edu if you have questions about the pipeline / need help.**
+
+
 ## Important sites:
 https://hgdownload.soe.ucsc.edu/goldenPath/dm6/bigZips/
 
@@ -8,7 +11,12 @@ https://www.ebi.ac.uk/sites/ebi.ac.uk/files/content.ebi.ac.uk/materials/2014/140
 
 https://www.htslib.org/workflow/wgs-call.html
 
-## Methods:
+https://marineomics.github.io/POP_03_poolseq.html
+
+# Methods:
+
+## Scripts for copying files and taking their subsets to practice running the pipeline:
+
 ### Find .fastq.gz files and copy them to my directory
 
 ``` find /weka/data/lab/rudman/Schmidt2018/Zap/ -type f -name "*gz*" -exec cp {} /scratch/user/amir.gabidulin/20240418_231031/Practice2/FASTQ_Files \; ``` 
@@ -16,78 +24,36 @@ https://www.htslib.org/workflow/wgs-call.html
 ### Find .fastq.gz files, subset samples to n number of lines, and save to SubsetData folder, maintaining the same names and formats. 
 
 ``` find /weka/scratch/user/amir.gabidulin/20240418_231031/Practice2/FASTQ_Files/ -type f -name "*gz" -exec sh -c 'zcat "$1" | head -n 2000 | gzip >  "/weka/scratch/user/amir.gabidulin/20240418_231031/Practice2/SubsetData/$(basename "$1" .gz)".subset.fastq.gz' _ {} \; ```
+## Working with raw files (FASTQ - FASTQ.gz)
+### FASTQ QC filtering: trim_galore.sh >>> 
+**Explanation:** Specify Directory with DIR var where your FASTQs are at -> Insert directories of R1 and R2 corresponding files into R1 and R2 variables. 
 
-### cutadaptTrimmer.sh >>> Search for my .fastq.gz files, both treatment and founders, and insert them appropriately into the cutadapt function with 20 filtering quality and my adapter sequences:
+**Purpose:** Trimming Adapter Seqs, Filtering anything with sub 40 BPs length, and allowing a max of 1 Ns in the sequences. Trimming and truncating at quality 20 BPs (phred+33 score). This is stringent filtering, lower coverage (< 50) or lower length of reads (< 100) will require changes. ZaprionusEXP had length of reads ~150, and a coverage of 100-250. 
 
 ```
-
 #!/bin/bash
 #SBATCH --partition=cas
-#SBATCH --time=7-00:0:00
+#SBATCH --time=3-00:0:00
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
-#SBATCH --cpus-per-task=50
+#SBATCH --cpus-per-task=64
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=amir.gabidulin@wsu.edu
-#SBATCH --output=output.out
-#SBATCH --error=error.err
+#SBATCH --output=outputTRIM.out
+#SBATCH --error=errorTRIM.err
 
+module load trimgalore
 
-module load cutadapt
+# Specify the directory containing the fastq files
+DIR="/weka/scratch/user/amir.gabidulin/20240503_022212/FinalDestination/20240510_132726/FASTQ_Files"
 
-# Define adapter sequences
-ADAPTER_FWD="AGATCGGAAGAGC"
-ADAPTER_REV="AGATCGGAAGAGC"
+# Iterate over all R1 files in the directory
+for R1 in "$DIR"/*_R1_001.fastq.gz; do
+    # Derive the corresponding R2 file
+    R2="${R1/_R1_/_R2_}"
 
-# Define quality cutoff
-QUAL=20
-
-# Define input and output directories
-INPUT_DIR="/weka/scratch/user/amir.gabidulin/20240510_132726/FASTQ_Files"
-OUTPUT_DIR="/weka/scratch/user/amir.gabidulin/20240510_132726/TrimmedData"
-
-mkdir -p "$OUTPUT_DIR"
-
-# Process regular paired-end files
-for R1_file in "$INPUT_DIR"/*_R1_001.fastq.gz; do
-    # Extract corresponding R2 filename
-    R2_file="${R1_file/_R1_001/_R2_001}"
-
-    # Extract basename of the files
-    base_name=$(basename "$R1_file" "_R1_001.fastq.gz")
-
-    # Define output filenames with full path
-    OUTPUT_FWD="$OUTPUT_DIR/${base_name}.trimmed_R1.fastq.gz"
-    OUTPUT_REV="$OUTPUT_DIR/${base_name}.trimmed_R2.fastq.gz"
-
-    # Run Cutadapt
-    cutadapt -a $ADAPTER_FWD -A $ADAPTER_REV \
-             --quality-cutoff $QUAL \
-             -o $OUTPUT_FWD -p $OUTPUT_REV \
-             $R1_file $R2_file
-
-    # Optionally, add additional processing or logging here
-done
-
-# Process additional paired-end files with different naming convention
-for T_file in "$INPUT_DIR"/T*_FOUND_R1.fastq.gz; do
-    # Extract corresponding R2 filename
-    R2_file="${T_file/_R1/_R2}"
-
-    # Extract basename of the files
-    base_name=$(basename "$T_file" "_R1.fastq.gz")
-
-    # Define output filenames with full path
-    OUTPUT_FWD="$OUTPUT_DIR/${base_name}.trimmed_R1.fastq.gz"
-    OUTPUT_REV="$OUTPUT_DIR/${base_name}.trimmed_R2.fastq.gz"
-
-    # Run Cutadapt
-    cutadapt -a $ADAPTER_FWD -A $ADAPTER_REV \
-             --quality-cutoff $QUAL \
-             -o $OUTPUT_FWD -p $OUTPUT_REV \
-             $T_file $R2_file
-
-    # Optionally, add additional processing or logging here
+    # Run trim_galore on the file pair
+    trim_galore --paired --length 40 --max_n 1 "$R1" "$R2" -a AGATCGGAAGAGC -q 20 -o /weka/scratch/user/amir.gabidulin/20240503_022212/FinalDestination/20240510_132726/FinalVersion/TrimmedFASTQ
 done
  ```
 
