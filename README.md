@@ -25,6 +25,11 @@ https://marineomics.github.io/POP_03_poolseq.html
 
 ``` find /weka/scratch/user/amir.gabidulin/20240418_231031/Practice2/FASTQ_Files/ -type f -name "*gz" -exec sh -c 'zcat "$1" | head -n 2000 | gzip >  "/weka/scratch/user/amir.gabidulin/20240418_231031/Practice2/SubsetData/$(basename "$1" .gz)".subset.fastq.gz' _ {} \; ```
 ## Working with raw files (FASTQ - FASTQ.gz)
+
+### FASTQ raw files:
+````fastqc 18057XD-04-06_S0_L001_R1_001.fastq.gz````
+
+
 ### FASTQ QC filtering: trim_galore.sh >>> 
 **Explanation:** Specify Directory with DIR var where your FASTQs are at -> Insert directories of R1 and R2 corresponding files into R1 and R2 variables. 
 
