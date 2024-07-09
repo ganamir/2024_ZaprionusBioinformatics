@@ -64,55 +64,66 @@ done
 
 ### Build a Reference Genome from your Genome Assembly (dm6 for DGRP)
 
-``` bowtie2-build dm6.fa.gz reference_genome ```
+``` bwa index dm6.fa.gz ```
 
 
-### bowtie2AlignScript.sh >>> Align reads to your reference index
+### bwa_aligner.sh >>> Align reads to your reference index
+
+**Explanation:** Look for .gz files in the input_dir, properly find the R1 and R2 pairs, and run a paired-end read alignment of reads to reference. 
+
+**Purpose:** To call variants at different sites you need to understand where the sequence genome deviates from the reference. So BWA alignment aligns your .fastq reads against the reference genome and outputs that alignment information to .SAM (Sequence Alignment Map) file that are used for all the downstream NGS (Poolseq & WGS) analyses.
 
 ```
 #!/bin/bash
+#SBATCH --partition=cas
+#SBATCH --time=7-00:0:00
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=1
+#SBATCH --cpus-per-task=50
+#SBATCH --mail-type=ALL
+#SBATCH --mail-user=amir.gabidulin@wsu.edu
+#SBATCH --output=outputBWA.out
+#SBATCH --error=errorBWA.err
 
-module load bowtie2
+module load bwa
 
-# Define paths
-BOWTIE2_INDEX="/scratch/user/amir.gabidulin/20240418_231031/Practice2/DGRPassembly/reference_genome"
-OUTPUT_DIR="/scratch/user/amir.gabidulin/20240418_231031/Practice2/AlignedReads"
-INPUT_DIR="/scratch/user/amir.gabidulin/20240418_231031/Practice2/TrimmedData"
-LOG_FILE="$OUTPUT_DIR/bowtie2_log.txt"
+# Directory containing .gz files
+input_dir="/weka/scratch/user/amir.gabidulin/20240503_022212/FinalDestination/20240510_132726/FinalVersion/TrimmedFASTQ"
+output_dir="$input_dir/bwaAligned"
 
-# Create output directory if it doesn't exist
-mkdir -p "$OUTPUT_DIR"
+mkdir -p "$output_dir"
 
-# Function to run Bowtie2 alignment
-run_bowtie2() {
-    local SAMPLE_NAME="$1"
-    local TRIMMED_FWD="$2"
-    local TRIMMED_REV="$3"
-    local OUTPUT_SAM="$OUTPUT_DIR/${SAMPLE_NAME}.sam"
+# Reference genome
+reference_genome="/weka/scratch/user/amir.gabidulin/20240503_022212/FinalDestination/20240510_132726/FinalVersion/DGRPassembly/dm6.fa"
 
-    echo "Aligning $TRIMMED_FWD and $TRIMMED_REV..."
+# Number of threads for BWA
+threads=50
 
-    # Run Bowtie2 alignment
-    bowtie2 -x "$BOWTIE2_INDEX" \
-            -1 "$TRIMMED_FWD" \
-            -2 "$TRIMMED_REV" \
-            -S "$OUTPUT_SAM" \
-            2>> "$LOG_FILE"
+# Iterate over all R1 files in the specified directory
+for file1 in "$input_dir"/*_R1_*_val_1.fq.gz; do
+    # Construct the expected R2 filename
+    file2="${file1/_R1_/_R2_}"
+    file2="${file2/_val_1/_val_2}"
+    echo "$file1"
+    echo "$file2"
 
-    # Optionally, add additional processing or logging here
-}
+    # Check if the R2 file exists
+    if [ -f "$file2" ]; then
+        header=$(zcat "$file1" | head -n 1)
+        id=$(echo "$header" | head -n 1 | cut -f 1-4 -d":" | sed 's/@//' | sed 's/:/_/g')
+        sm=$(echo "$header" | head -n 1 | grep -Eo "[ATGCN]+$")
+        read_group=$(echo "@RG\tID:$id\tSM:${id}_${sm}\tLB:${id}_${sm}\tPL:ILLUMINA")
 
-# Align regular paired-end files
-for R1_file in "$INPUT_DIR"/*.trimmed_R1.fastq.gz; do
-    if [ -f "$R1_file" ]; then
-        SAMPLE_NAME=$(basename "$R1_file" ".trimmed_R1.fastq.gz")
-        TRIMMED_REV="$INPUT_DIR/${SAMPLE_NAME}.trimmed_R2.fastq.gz"
-        run_bowtie2 "$SAMPLE_NAME" "$R1_file" "$TRIMMED_REV"
+        echo "Read Group: $read_group"
+
+        # Output filename
+        output_file=$(basename "${file1%_R1_*.fq.gz}_aligned.sam")
+
+        bwa mem "$reference_genome" -M -t "$threads" -v 3 -R "$read_group" "$file1" "$file2" > "$output_dir/$output_file"
     else
-        echo "Warning: $R1_file does not exist or is not a file."
+        echo "Corresponding R2 file for $file1 not found."
     fi
 done
-
 ```
 
 ### samtobam.sh >>> converts .sam files to .bam files:
