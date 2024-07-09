@@ -126,7 +126,7 @@ for file1 in "$input_dir"/*_R1_*_val_1.fq.gz; do
 done
 ```
 
-### samtobam.sh >>> converts .sam files to .bam files:
+### samtobam.sh >>> converts .sam files to .bam (Binary *sequence* Alignment Map) files:
 
 ```
 #!/bin/bash
@@ -145,7 +145,7 @@ for sam_file in "$SAM_DIR"/*.sam; do
     if [ -f "$sam_file" ]; then
         base_name=$(basename "$sam_file" .sam)
         bam_file="$BAM_DIR/$base_name.bam"
-        samtools view -bS "$sam_file" > "$bam_file"
+        samtools view -bS "$sam_file" | samtools sort "$bam_file"
         echo "Converted $sam_file to $bam_file"
     else
         echo "Warning: $sam_file does not exist or is not a file."
