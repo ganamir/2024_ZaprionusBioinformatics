@@ -158,30 +158,34 @@ samtools view -f 4 18057XD-04-06_S0_L001.bam | cut -f 10 | sort | uniq -c | sort
 ```
 
 
-### sortBam.sh >>> sorts BAMs for SNP calling:
+### coverage.sh >>> Generate coverage metrics -- Required for filtering and other calculated metrics.
 
 ```
-#!/bin/bash
+#SBATCH --mail-user=amir.gabidulin@wsu.edu
+#SBATCH --output=outputCOVERAGE.out
+#SBATCH --error=errorCOVERAGE.err
 
 module load samtools
+# Directory containing .bam files
+BAM_DIR="/weka/scratch/user/amir.gabidulin/20240503_022212/FinalDestination/20240510_132726/FinalVersion/TrimmedFASTQ/bwaAligned/bamFiles"
 
-# Define paths
-BAM_DIR="/scratch/user/amir.gabidulin/20240418_231031/Practice2/bamFiles"
-SORTED_BAM_DIR="/scratch/user/amir.gabidulin/20240418_231031/Practice2/bamFiles/SortedFiles"
+# Output directory for coverage files
+OUTPUT_DIR="/weka/scratch/user/amir.gabidulin/20240503_022212/FinalDestination/20240510_132726/FinalVersion/TrimmedFASTQ/bwaAligned/bamFiles/coverage"
 
-# Create sorted BAM directory if it doesn't exist
-mkdir -p "$SORTED_BAM_DIR"
+# Create output directory if it doesn't exist
+mkdir -p "$OUTPUT_DIR"
 
-# Sort BAM files and add "_filtered" to their base names
-for bam_file in "$BAM_DIR"/*.bam; do
-    if [ -f "$bam_file" ]; then
-        base_name=$(basename "$bam_file" .bam)
-        sorted_bam_file="$SORTED_BAM_DIR/${base_name}_filtered.bam"
-        samtools sort -o "$sorted_bam_file" "$bam_file"
-        echo "Sorted $bam_file and saved as $sorted_bam_file"
-    else
-        echo "Warning: $bam_file does not exist or is not a file."
-    fi
+# Loop over all .bam files in the directory
+for BAM_FILE in "$BAM_DIR"/*.bam
+do
+    # Extract the base name of the file (without the .bam extension)
+    BASE_NAME=$(basename "$BAM_FILE" .bam)
+
+    # Define the output coverage file name
+    OUTPUT_FILE="$OUTPUT_DIR/$BASE_NAME.coverage"
+
+    # Run samtools coverage and redirect the output to the coverage file
+    samtools coverage "$BAM_FILE" -o "$OUTPUT_FILE"
 done
 ```
 ### picardFilter.sh >>> sort .bams to remove duplicates
