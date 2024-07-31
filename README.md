@@ -158,19 +158,62 @@ samtools view -f 4 18057XD-04-06_S0_L001.bam | cut -f 10 | sort | uniq -c | sort
 ```
 
 
-### coverage.sh >>> Generate coverage metrics -- Required for filtering and other calculated metrics.
+### markAndRemove.sh >>> Mark duplicates and remove them from the bam files.
 
 ```
+#!/bin/bash
+#SBATCH --partition=cas
+#SBATCH --time=7-00:0:00
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=1
+#SBATCH --cpus-per-task=40
+#SBATCH --mail-type=ALL
+#SBATCH --mail-user=amir.gabidulin@wsu.edu
+#SBATCH --output=outputREMOVAL.out
+#SBATCH --error=errorREMOVAL.err
+
+
+module load samtools
+module load picard
+
+# Specify the directory containing the BAM files
+BAM_DIR="/weka/scratch/user/amir.gabidulin/20240503_022212/FinalDestination/20240510_132726/FinalVersion/TrimmedFASTQ/bwaAligned/bamFiles"
+
+# Loop through each BAM file in the specified directory
+for BAM_FILE in "$BAM_DIR"/*.bam; do
+  # Extract the base name of the BAM file (without path and extension)
+  BASE_NAME=$(basename "$BAM_FILE" .bam)
+
+  # Step 1: Mark duplicates using Picard
+  picard MarkDuplicates \
+      I="$BAM_FILE" \
+      O="$BAM_DIR/${BASE_NAME}_marked.bam" \
+      M="$BAM_DIR/${BASE_NAME}_metrics.txt" \
+      REMOVE_DUPLICATES=true
+  echo "Processed $BAM_FILE: duplicates marked and unpaired reads removed."
+done
+
+echo "All BAM files have been processed."
+```
+### coverage.sh >>> Generate coverage metrics -- Required for filtering and other calculated metrics.
+```
+#!/bin/bash
+#SBATCH --partition=cas
+#SBATCH --time=2-00:0:00
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=1
+#SBATCH --cpus-per-task=15
+#SBATCH --mail-type=ALL
 #SBATCH --mail-user=amir.gabidulin@wsu.edu
 #SBATCH --output=outputCOVERAGE.out
 #SBATCH --error=errorCOVERAGE.err
 
 module load samtools
 # Directory containing .bam files
-BAM_DIR="/weka/scratch/user/amir.gabidulin/20240503_022212/FinalDestination/20240510_132726/FinalVersion/TrimmedFASTQ/bwaAligned/bamFiles"
+BAM_DIR="/weka/scratch/user/amir.gabidulin/20240503_022212/FinalDestination/20240510_132726/FinalVersion/TrimmedFASTQ/bwaAligned/bamFiles/DuplicateRemoved"
 
 # Output directory for coverage files
-OUTPUT_DIR="/weka/scratch/user/amir.gabidulin/20240503_022212/FinalDestination/20240510_132726/FinalVersion/TrimmedFASTQ/bwaAligned/bamFiles/coverage"
+OUTPUT_DIR="/weka/scratch/user/amir.gabidulin/20240503_022212/FinalDestination/20240510_132726/FinalVersion/TrimmedFASTQ/bwaAligned/bamFiles/DuplicateRemoved/coverage"
 
 # Create output directory if it doesn't exist
 mkdir -p "$OUTPUT_DIR"
@@ -188,99 +231,8 @@ do
     samtools coverage "$BAM_FILE" -o "$OUTPUT_FILE"
 done
 ```
-### picardFilter.sh >>> sort .bams to remove duplicates
-```
-#!/bin/bash
-#SBATCH --partition=cas
-#SBATCH --time=7-00:0:00
-#SBATCH --nodes=1
-#SBATCH --ntasks-per-node=1
-#SBATCH --cpus-per-task=64
-#SBATCH --mail-type=ALL
-#SBATCH --mail-user=amir.gabidulin@wsu.edu
-#SBATCH --output=output.out
-#SBATCH --error=error.err
 
-module load picard
-
-# Define the directories
-input_dir="/weka/scratch/user/amir.gabidulin/20240503_022212/FinalDestination/20240510_132726/bamFiles2/SortedFiles"
-output_dir="/weka/scratch/user/amir.gabidulin/20240503_022212/FinalDestination/20240510_132726/bamFiles2/SortedFiles/PicardFiltered"
-
-# Create the output directory if it doesn't exist
-mkdir -p "$output_dir"
-
-# Loop through all .bam files in the input directory
-for bam_file in "$input_dir"/*.bam; do
-    # Extract the base name of the file (without directory and extension)
-    base_name=$(basename "$bam_file" .bam)
-
-    # Define the output file paths
-    output_bam="$output_dir/${base_name}_dedup.bam"
-    metrics_file="$output_dir/${base_name}_metrics.txt"
-
-    # Run Picard MarkDuplicates
-    picard MarkDuplicates \
-        I="$bam_file" \
-        O="$output_bam" \
-        M="$metrics_file" \
-        REMOVE_DUPLICATES=true
-
-    # Index the output BAM file
-    samtools index "$output_bam"
-
-    echo "Processed $bam_file -> $output_bam"
-done
-
-echo "All BAM files processed and indexed."
-```
-
-### Combine .bam samples into a single mpileup
-```
-#!/bin/bash
-#SBATCH --partition=cas
-#SBATCH --time=7-00:0:00
-#SBATCH --nodes=1
-#SBATCH --ntasks-per-node=1
-#SBATCH --cpus-per-task=64
-#SBATCH --mail-type=ALL
-#SBATCH --mail-user=amir.gabidulin@wsu.edu
-#SBATCH --output=outputC.out
-#SBATCH --error=errorC.err
-
-module load bcftools
-
-bcftools mpileup -Ou -f /weka/scratch/user/amir.gabidulin/20240503_022212/FinalDestination/20240510_132726/DGRPassembly/dm6.fa /weka/scratch/user/amir.gabidulin/20240503_022212/FinalDestination/20240510_132726/bamFiles2/SortedFiles/PicardFiltered/QualityFilteredFiles/18057XD-04-06_S0_L001_filtered_dedup.bam /weka/scratch/user/amir.gabidulin/20240503_022212/FinalDestination/20240510_132726/bamFiles2/SortedFiles/PicardFiltered/QualityFilteredFiles/18057XD-04-07_S0_L001_filtered_dedup.bam /weka/scratch/user/amir.gabidulin/20240503_022212/FinalDestination/20240510_132726/bamFiles2/SortedFiles/PicardFiltered/QualityFilteredFiles/18057XD-04-08_S0_L001_filtered_dedup.bam /weka/scratch/user/amir.gabidulin/20240503_022212/FinalDestination/20240510_132726/bamFiles2/SortedFiles/PicardFiltered/QualityFilteredFiles/18057XD-04-09_S0_L001_filtered_dedup.bam /weka/scratch/user/amir.gabidulin/20240503_022212/FinalDestination/20240510_132726/bamFiles2/SortedFiles/PicardFiltered/QualityFilteredFiles/18057XD-04-10_S0_L001_filtered_dedup.bam /weka/scratch/user/amir.gabidulin/20240503_022212/FinalDestination/20240510_132726/bamFiles2/SortedFiles/PicardFiltered/QualityFilteredFiles/18057XD-04-11_S0_L001_filtered_dedup.bam -o Zaprionus.bcf ### Change Zaprionus Samples for Control
-
-```
-
-### Call .VCF from the .BCF
-```
-#!/bin/bash
-#SBATCH --partition=cas
-#SBATCH --time=7-00:0:00
-#SBATCH --nodes=1
-#SBATCH --ntasks-per-node=1
-#SBATCH --cpus-per-task=64
-#SBATCH --mail-type=ALL
-#SBATCH --mail-user=amir.gabidulin@wsu.edu
-#SBATCH --output=outputCall.out
-#SBATCH --error=errorCall.err
-
-module load bcftools
-### Change Zaprionus to Control
-
-bcftools call -vmO z -o /weka/scratch/user/amir.gabidulin/20240503_022212/FinalDestination/20240510_132726/bamFiles2/SortedFiles/PicardFiltered/QualityFilteredFiles/Zaprionus.vcf.gz /weka/scratch/user/amir.gabidulin/20240503_022212/FinalDestination/20240510_132726/bamFiles2/SortedFiles/PicardFiltered/QualityFilteredFiles/Zaprionus.bcf 
-```
-
-### Merge .vcf with both Zaprionus and Control:
-```
-bcftools merge -o merged.vcf.gz -Oz treatmentA.vcf.gz treatmentB.vcf.gz
-```
-
-## For popoolation2:
-
-### Create mpileup with all of the samples:
+### Combine .bam files into a single mpileup
 ```
 #!/bin/bash
 #SBATCH --partition=cas
@@ -290,43 +242,103 @@ bcftools merge -o merged.vcf.gz -Oz treatmentA.vcf.gz treatmentB.vcf.gz
 #SBATCH --cpus-per-task=40
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=amir.gabidulin@wsu.edu
-#SBATCH --output=popoolation.out
-#SBATCH --error=popoolation.err
-
+#SBATCH --output=outputCOMB.out
+#SBATCH --error=errorCOMB.err
 
 module load samtools
+# Directory containing .bam files
+BAM_DIR="/weka/scratch/user/amir.gabidulin/20240503_022212/FinalDestination/20240510_132726/FinalVersion/TrimmedFASTQ/bwaAligned/bamFiles/DuplicateRemoved"
 
-# Directory containing the BAM files
-BAM_DIR="/weka/scratch/user/amir.gabidulin/20240503_022212/FinalDestination/20240510_132726/bamFiles2/SortedFiles/PicardFiltered/QualityFilteredFiles"
-# Reference genome file
-REFERENCE="/weka/scratch/user/amir.gabidulin/20240503_022212/FinalDestination/20240510_132726/DGRPassembly/dm6.fa"
-# Output file for the Pileup
-PILEUP_FILE="/weka/scratch/user/amir.gabidulin/20240503_022212/FinalDestination/20240510_132726/bamFiles2/SortedFiles/PicardFiltered/QualityFilteredFiles/merged.mpileup"
+samtools mpileup -f /weka/scratch/user/amir.gabidulin/20240503_022212/FinalDestination/20240510_132726/FinalVersion/DGRPassembly/dm6.fa -R "$BAM_DIR"/*.bam > combined.mpileup
 
-# Create a list of all BAM files in the directory
-BAM_FILES=("$BAM_DIR"/*.bam)
-
-# Convert BAM files to Pileup format
-echo "Converting BAM files to Pileup format..."
-samtools mpileup -f "$REFERENCE" "${BAM_FILES[@]}" > "$PILEUP_FILE"
-
-echo "Pileup file created at $PILEUP_FILE"
 ```
 
-### Pipe everything into popoolation2:
+### Combine everything into a .sync file using Popoolation2 tools:
+
 ```
-#!/bin/sh
+#!/bin/bash
 #SBATCH --partition=cas
 #SBATCH --time=7-00:0:00
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
-#SBATCH --cpus-per-task=64
+#SBATCH --cpus-per-task=40
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=amir.gabidulin@wsu.edu
-#SBATCH --output=popoolationJar.out
-#SBATCH --error=popoolationJar.err
+#SBATCH --output=outputSYNC.out
+#SBATCH --error=errorSYNC.err
+#SBATCH --mem-per-cpu=12G
 
 module load java
 
-java -ea -Xmx12g -jar /weka/scratch/user/amir.gabidulin/20240503_022212/FinalDestination/20240510_132726/bamFiles2/SortedFiles/PicardFiltered/QualityFilteredFiles/popoolation2_1201/mpileup2sync.jar --input /weka/scratch/user/amir.gabidulin/20240503_022212/FinalDestination/20240510_132726/bamFiles2/SortedFiles/PicardFiltered/QualityFilteredFiles/merged.mpileup --output /weka/scratch/user/amir.gabidulin/20240503_022212/FinalDestination/20240510_132726/bamFiles2/SortedFiles/PicardFiltered/QualityFilteredFiles/merged.sync --fastq-type sanger --min-qual 20 --threads 64
+java -ea -Xmx12g -jar /weka/scratch/user/amir.gabidulin/20240503_022212/FinalDestination/20240510_132726/FinalVersion/popoolation2_1201/mpileup2sync.jar --input combined.mpileup --output combined.sync --fastq-type sange$
+```
+
+### Use Popoolation2 tools to generate known indel sites into a .gtf format from the .mpileup (Run concurrently with the combination of .mpileup into .sync)
+
+```
+#!/bin/bash
+#SBATCH --partition=cas
+#SBATCH --time=7-00:0:00
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=1
+#SBATCH --cpus-per-task=40
+#SBATCH --mail-type=ALL
+#SBATCH --mail-user=amir.gabidulin@wsu.edu
+#SBATCH --output=outputFINDIND.out
+#SBATCH --error=errorFINDIND.err
+
+module load perl
+perl /weka/scratch/user/amir.gabidulin/20240503_022212/FinalDestination/20240510_132726/FinalVersion/popoolation2_1201/indel_filtering/identify-indel-regions.pl --input combined.mpileup --output knownIndels.gtf
+```
+
+### Use Popoolation2 tools to remove known indel sites from a .sync file from the generated .gtf file (This one removes suprisingly a lot of SNPs, up to a million in zap dataset)
+
+```
+#!/bin/bash
+#SBATCH --partition=cas
+#SBATCH --time=7-00:0:00
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=1
+#SBATCH --cpus-per-task=40
+#SBATCH --mail-type=ALL
+#SBATCH --mail-user=amir.gabidulin@wsu.edu
+#SBATCH --output=outputFILTIND.out
+#SBATCH --error=errorFILTIND.err
+
+module load perl
+perl /weka/scratch/user/amir.gabidulin/20240503_022212/FinalDestination/20240510_132726/FinalVersion/popoolation2_1201/indel_filtering/filter-sync-by-gtf.pl --input combined.sync --gtf knownIndels.gtf --output FinalClean.sync
+```
+
+### Generate Population Allele Frequencies (important _rc file)
+
+```
+#!/bin/bash
+#SBATCH --partition=cas
+#SBATCH --time=2-00:0:00
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=1
+#SBATCH --cpus-per-task=40
+#SBATCH --mail-type=ALL
+#SBATCH --mail-user=amir.gabidulin@wsu.edu
+#SBATCH --output=outputAF.out
+#SBATCH --error=errorAF.err
+
+perl /weka/scratch/user/amir.gabidulin/20240503_022212/FinalDestination/20240510_132726/FinalVersion/popoolation2_1201/snp-frequency-diff.pl --input /weka/scratch/user/amir.gabidulin/20240503_022212/FinalDestination/20240510_132726/FinalVersion/TrimmedFASTQ/bwaAligned/bamFiles/DuplicateRemoved/DownStreamAnalysis/FinalClean.sync --output-prefix pop_diff --min-count 20 --min-coverage 50 --max-coverage 200
+```
+
+### Generate Population Fst
+
+```
+#!/bin/bash
+#SBATCH --partition=cas
+#SBATCH --time=2-00:0:00
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=1
+#SBATCH --cpus-per-task=40
+#SBATCH --mail-type=ALL
+#SBATCH --mail-user=amir.gabidulin@wsu.edu
+#SBATCH --output=outputFst.out
+#SBATCH --error=errorFst.err
+
+perl /weka/scratch/user/amir.gabidulin/20240503_022212/FinalDestination/20240510_132726/FinalVersion/popoolation2_1201/fst-sliding.pl --input /weka/scratch/user/amir.gabidulin/20240503_022212/FinalDestination/20240510_132726/FinalVersion/TrimmedFASTQ/bwaAligned/bamFiles/DuplicateRemoved/DownStreamAnalysis/FinalClean.sync --output ZapVsCont.fst --min-count 20 --min-coverage 50 --max-coverage 200 --min-covered-fraction 0.2 --window-size 10000 --step-size 10000 --pool-size 200 --suppress-noninformative
 ```
