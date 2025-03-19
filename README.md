@@ -3,7 +3,8 @@
 
 
 ## Important sites:
-https://hgdownload.soe.ucsc.edu/goldenPath/dm6/bigZips/
+
+NCBI DATABASE FOR DM6: https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/001/215/GCF_000001215.4_Release_6_plus_ISO1_MT/ OR https://hgdownload.soe.ucsc.edu/goldenPath/dm6/bigZips/
 
 https://hcc.unl.edu/docs/applications/app_specific/bioinformatics_tools/alignment_tools/bowtie2/
 
